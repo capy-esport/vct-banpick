@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VCT Map & Agent Ban/Pick Utility</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Background FX -->
+  <div class="bg-grid-overlay" aria-hidden="true"></div>
+  <div class="bg-glow-radial" aria-hidden="true"></div>
+
+  <div id="app" class="app-container">
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="header-brand" id="brand-header-link" role="button" tabindex="0" title="Return to Home / Setup">
+        <div class="brand-logo">
+          <svg viewBox="0 0 100 100" class="brand-svg" aria-hidden="true">
+            <polygon points="50,8 92,84 8,84" class="logo-outer" />
+            <polygon points="50,26 78,76 22,76" class="logo-inner" />
+            <line x1="50" y1="8" x2="50" y2="84" class="logo-slash" />
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1 class="brand-title">VCT DRAFT UTILITY</h1>
+          <span class="brand-tag">// TOURNAMENT DRAFT PROTOCOL</span>
+        </div>
+      </div>
+
+      <!-- Stepper / Phase Tracker -->
+      <nav class="phase-stepper" aria-label="Draft Progress">
+        <div class="step-item active" data-phase="1">
+          <span class="step-num">01</span>
+          <span class="step-label">SETUP</span>
+        </div>
+        <div class="step-divider"></div>
+        <div class="step-item" data-phase="2">
+          <span class="step-num">02</span>
+          <span class="step-label">ROULETTE</span>
+        </div>
+        <div class="step-divider"></div>
+        <div class="step-item" data-phase="3">
+          <span class="step-num">03</span>
+          <span class="step-label">MAPS</span>
+        </div>
+        <div class="step-divider"></div>
+        <div class="step-item" data-phase="4">
+          <span class="step-num">04</span>
+          <span class="step-label">AGENTS</span>
+        </div>
+        <div class="step-divider"></div>
+        <div class="step-item" data-phase="5">
+          <span class="step-num">05</span>
+          <span class="step-label">SUMMARY</span>
+        </div>
+      </nav>
+
+      <!-- Global Actions -->
+      <div class="header-actions">
+        <button id="btn-sound-toggle" class="btn-icon" title="Toggle Sound FX" aria-label="Toggle Sound">
+          <span id="sound-icon">🔊</span>
+        </button>
+        <button id="btn-theme-toggle" class="btn-icon" title="Toggle Light/Dark Theme" aria-label="Toggle Theme">
+          <span id="theme-icon">☀️</span>
+        </button>
+        <button type="button" id="btn-undo-action" class="btn-ghost btn-sm" title="Undo Last Action" disabled>
+          ↶ UNDO
+        </button>
+        <button id="btn-reset-match" class="btn-ghost btn-sm" title="Reset Current Match">
+          RESET
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      
+      <!-- ================= PHASE 1: SETUP ================= -->
+      <section id="phase-1" class="phase-section active">
+        <div class="section-heading">
+          <span class="section-tag">// PHASE 01</span>
+          <h2 class="section-title">MATCH CONFIGURATION</h2>
+          <p class="section-desc">Enter participating team names, select the match format, and choose exactly 7 maps for the tournament pool.</p>
+        </div>
+
+        <form id="setup-form" class="setup-layout" onsubmit="return false;">
+          <!-- Teams Setup -->
+          <div class="card setup-card">
+            <h3 class="card-title"><span class="accent-mark">/</span> PARTICIPATING TEAMS</h3>
+            <div class="team-inputs-grid">
+              <div class="input-group">
+                <label for="input-team1">TEAM 1 NAME</label>
+                <input type="text" id="input-team1" class="text-input" placeholder="e.g. Sentinels" maxlength="28" autocomplete="off" />
+              </div>
+              <div class="vs-divider">VS</div>
+              <div class="input-group">
+                <label for="input-team2">TEAM 2 NAME</label>
+                <input type="text" id="input-team2" class="text-input" placeholder="e.g. Fnatic" maxlength="28" autocomplete="off" />
+              </div>
+            </div>
+            <div id="team-validation-error" class="validation-message" aria-live="polite"></div>
+          </div>
+
+          <!-- Format Selection -->
+          <div class="card setup-card">
+            <h3 class="card-title"><span class="accent-mark">/</span> MATCH FORMAT</h3>
+            <div class="format-options-grid">
+              <label class="format-card">
+                <input type="radio" name="match-format" value="BO1" />
+                <span class="format-badge">BO1</span>
+                <span class="format-name">BEST OF 1</span>
+                <span class="format-detail">6 Bans &rarr; 1 Decider Map</span>
+              </label>
+              <label class="format-card selected">
+                <input type="radio" name="match-format" value="BO3" checked />
+                <span class="format-badge">BO3</span>
+                <span class="format-name">BEST OF 3</span>
+                <span class="format-detail">Bans + 2 Picks + 1 Decider</span>
+              </label>
+              <label class="format-card">
+                <input type="radio" name="match-format" value="BO5" />
+                <span class="format-badge">BO5</span>
+                <span class="format-name">BEST OF 5</span>
+                <span class="format-detail">Bans + 4 Picks + Spin Decider</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Map Pool Selection (12 maps, choose exactly 7) -->
+          <div class="card setup-card full-width">
+            <div class="card-header-flex">
+              <div>
+                <h3 class="card-title"><span class="accent-mark">/</span> MAP POOL SELECTION</h3>
+                <p class="card-subtitle">Select exactly 7 maps to be used for this match.</p>
+              </div>
+              <div class="map-counter-container">
+                <span id="map-selection-counter" class="counter-badge counter-warning">0 / 7 SELECTED</span>
+              </div>
+            </div>
+
+            <div class="quick-map-actions">
+              <button type="button" id="btn-quick-standard" class="btn-ghost btn-xs">STANDARD POOL</button>
+              <button type="button" id="btn-quick-random" class="btn-ghost btn-xs">RANDOM 7</button>
+              <button type="button" id="btn-quick-clear" class="btn-ghost btn-xs">CLEAR ALL</button>
+            </div>
+
+            <div id="setup-map-grid" class="map-selection-grid">
+              <!-- Rendered via JS -->
+            </div>
+            
+            <div id="map-pool-validation-error" class="validation-message" aria-live="polite"></div>
+          </div>
+
+          <!-- Setup Submit -->
+          <div class="setup-submit-bar">
+            <button type="button" id="btn-submit-setup" class="btn-primary btn-lg" disabled>
+              PROCEED TO SEEDING ROULETTE &rarr;
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- ================= PHASE 2: SPIN WHEELS (ROULETTE REELS) ================= -->
+      <section id="phase-2" class="phase-section">
+        <div class="section-heading">
+          <span class="section-tag">// PHASE 02</span>
+          <h2 class="section-title">MATCH SEEDING ROULETTE</h2>
+          <p class="section-desc">Spin Roulette 1 to determine which team selects Team A or Team B status.</p>
+        </div>
+
+        <!-- Requirement Progress Checklist -->
+        <div class="phase2-checklist-banner" id="phase-2-checklist">
+          <div class="check-item" id="chk-roulette-1">
+            <span class="chk-icon">⏳</span>
+            <span class="chk-text">ROULETTE 01: TEAM PRIORITY PENDING</span>
+          </div>
+        </div>
+
+        <div class="wheels-layout single-wheel-layout">
+          <!-- Wheel 1: Team Priority Reel -->
+          <div class="card wheel-station-card" id="card-wheel-team">
+            <div class="station-header">
+              <span class="station-badge">ROULETTE 01</span>
+              <h3 class="station-title">TEAM PRIORITY ROLL</h3>
+              <p class="station-desc">Winner selects to play as Team A or Team B.</p>
+            </div>
+
+            <div class="roulette-reel-wrapper" id="wrapper-wheel-team">
+              <div class="roulette-center-marker" aria-hidden="true"></div>
+              <div id="reel-strip-team" class="roulette-strip">
+                <!-- alternating team cards rendered dynamically -->
+              </div>
+            </div>
+
+            <div class="station-status-area">
+              <div id="team-wheel-status" class="station-status-text">Ready to spin</div>
+              <div id="team-assignment-badge" class="badge-status-box hidden"></div>
+              <button type="button" id="btn-change-team-choice" class="btn-ghost btn-xs hidden" style="margin-top: 8px;">CHANGE A/B SELECTION</button>
+            </div>
+
+            <div class="station-btn-group">
+              <button type="button" id="btn-spin-team" class="btn-primary btn-md">
+                SPIN TEAM ROULETTE
+              </button>
+              <button type="button" id="btn-fast-spin-team" class="btn-ghost btn-md" title="Instant 1.5s roll">
+                ⚡ FAST ROLL
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="phase-nav-footer">
+          <div class="proceed-wrapper">
+            <button type="button" id="btn-proceed-to-maps" class="btn-primary btn-lg btn-proceed-locked">
+              PROCEED TO MAP BAN/PICK &rarr;
+            </button>
+            <div id="proceed-maps-hint" class="proceed-hint">Complete Team Priority roll above to proceed to Map Ban/Pick</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= PHASE 3: MAP BAN/PICK ================= -->
+      <section id="phase-3" class="phase-section">
+        <div class="section-heading">
+          <div class="heading-flex">
+            <div>
+              <span class="section-tag">// PHASE 03</span>
+              <h2 class="section-title">MAP BAN &amp; PICK PHASE</h2>
+            </div>
+            <div class="match-meta-pill" id="map-phase-meta-pill">
+              <!-- Team A vs Team B & Format -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Step Bar -->
+        <div class="draft-status-banner">
+          <div class="status-left">
+            <span class="pulse-indicator"></span>
+            <span id="map-step-prompt" class="status-prompt">INITIALIZING MAP DRAFT...</span>
+          </div>
+          <div class="status-right" id="map-step-count">
+            STEP 1 / 6
+          </div>
+        </div>
+
+        <!-- Steps Timeline / Tracker -->
+        <div id="map-steps-tracker" class="steps-tracker-bar">
+          <!-- Populated dynamically -->
+        </div>
+
+        <!-- 7 Selected Maps Grid -->
+        <div id="draft-map-grid" class="draft-map-grid">
+          <!-- Populated dynamically -->
+        </div>
+
+        <!-- Drafted Maps Summary Table / Visual Shelf -->
+        <div class="card map-summary-shelf">
+          <h3 class="card-title"><span class="accent-mark">/</span> DRAFTED MAP SCHEDULE</h3>
+          <div id="drafted-maps-list" class="drafted-maps-list">
+            <!-- Drafted maps populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Phase 3 Continue Button -->
+        <div class="phase-nav-footer">
+          <button type="button" id="btn-proceed-to-agents" class="btn-primary btn-lg hidden">
+            CONTINUE TO AGENT PHASE &rarr;
+          </button>
+        </div>
+      </section>
+
+      <!-- ================= PHASE 4: AGENT PHASE (PER-MAP PROTOCOL) ================= -->
+      <section id="phase-4" class="phase-section">
+        
+        <!-- SUBVIEW A: Intermediate Map Selector -->
+        <div id="agent-map-selector-view">
+          <div class="section-heading">
+            <div class="heading-flex">
+              <div>
+                <span class="section-tag">// PHASE 04 — INTERMEDIATE PROTOCOL</span>
+                <h2 class="section-title">SELECT MAP FOR AGENT PROTOCOL</h2>
+                <p class="section-desc">Click an uncompleted map to spin its Agent Mode and execute the agent draft. Once completed, copy results per map or proceed to summary.</p>
+              </div>
+              <div class="match-meta-pill" id="map-protocol-progress">
+                MAP DRAFTS: 0 / 3 COMPLETED
+              </div>
+            </div>
+          </div>
+
+          <!-- Final Drafted Maps Cards Container -->
+          <div id="intermediate-maps-grid" class="intermediate-maps-grid">
+            <!-- Drafted map cards rendered dynamically -->
+          </div>
+
+          <div class="phase-nav-footer" style="margin-top: 28px;">
+            <div class="proceed-wrapper">
+              <button type="button" id="btn-proceed-to-summary" class="btn-primary btn-lg btn-proceed-locked">
+                PROCEED TO MATCH SUMMARY &rarr;
+              </button>
+              <div id="proceed-summary-hint" class="proceed-hint">Complete agent protocols for all drafted maps above to proceed to Summary</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUBVIEW B: Active Drafting Arena (Hidden until map chosen) -->
+        <div id="agent-drafting-view" class="hidden">
+          <!-- Top Navigation & Map Header -->
+          <div class="agent-draft-map-bar">
+            <button type="button" id="btn-back-to-map-selector" class="btn-ghost btn-sm">
+              &larr; BACK TO MAP SELECTOR
+            </button>
+            <div class="agent-active-map-info">
+              <span class="active-map-tag" id="active-map-num-tag">MAP 1</span>
+              <div class="active-map-thumb-frame">
+                <img id="active-map-thumb-img" src="assets/maps/ascent.png" alt="Active Map" class="active-map-thumb-img" onerror="this.src='assets/maps/ascent.png'" />
+              </div>
+              <span class="active-map-title" id="active-map-name-pill">ASCENT</span>
+            </div>
+            <div class="agent-mode-display-pill" id="agent-phase-mode-pill">
+              MODE: RANDOM AGENT
+            </div>
+          </div>
+
+          <!-- Agent Draft Completed / Review Mode Banner -->
+          <div id="agent-draft-complete-banner" class="card agent-complete-banner hidden">
+            <div class="complete-banner-content">
+              <div class="complete-banner-info">
+                <span class="complete-banner-tag" id="complete-banner-tag">✓ DRAFT PROTOCOL COMPLETED</span>
+                <h3 class="complete-banner-title" id="complete-banner-title">ASCENT: AGENT PROTOCOL LOCKED</h3>
+                <p class="complete-banner-desc" id="complete-banner-desc">Review the drafted team compositions below. When you are ready, return to the Map Selector.</p>
+              </div>
+              <div class="complete-banner-actions">
+                <button type="button" id="btn-banner-back-selector" class="btn-primary btn-md">
+                  &larr; RETURN TO MAP SELECTOR
+                </button>
+                <button type="button" id="btn-banner-copy-map" class="btn-secondary btn-md">
+                  📋 COPY MAP RESULT
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Random Agent Controller Box (Displayed if mode is Random Agent) -->
+          <div id="random-agent-controls" class="card agent-control-panel hidden">
+            <div class="control-panel-header">
+              <div class="active-team-indicator">
+                <span class="turn-label">CURRENT TURN:</span>
+                <span id="random-turn-team" class="turn-team-name">TEAM A</span>
+                <span id="random-turn-progress" class="turn-pill">ROLL 1 / 10</span>
+              </div>
+              <div class="role-status-hint" id="role-status-hint">
+                Select a role pool or click ALL to roll a random agent.
+              </div>
+            </div>
+
+            <div class="role-roll-button-bar">
+              <button type="button" class="btn-role btn-role-all" data-role="ALL">
+                <span class="role-title">ALL AGENTS</span>
+                <span class="role-count" id="count-role-all">(0)</span>
+              </button>
+              <button type="button" class="btn-role btn-role-duelist" data-role="Duelist">
+                <span class="role-title">DUELIST</span>
+                <span class="role-count" id="count-role-duelist">(0)</span>
+              </button>
+              <button type="button" class="btn-role btn-role-controller" data-role="Controller">
+                <span class="role-title">CONTROLLER</span>
+                <span class="role-count" id="count-role-controller">(0)</span>
+              </button>
+              <button type="button" class="btn-role btn-role-sentinel" data-role="Sentinel">
+                <span class="role-title">SENTINEL</span>
+                <span class="role-count" id="count-role-sentinel">(0)</span>
+              </button>
+              <button type="button" class="btn-role btn-role-initiator" data-role="Initiator">
+                <span class="role-title">INITIATOR</span>
+                <span class="role-count" id="count-role-initiator">(0)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Ban 6 Agents Controller Box (Displayed if mode is Ban 6 Agents) -->
+          <div id="ban6-agent-controls" class="card agent-control-panel hidden">
+            <div class="control-panel-header">
+              <div class="active-team-indicator">
+                <span class="turn-label">BANNING TURN:</span>
+                <span id="ban6-turn-team" class="turn-team-name">TEAM A</span>
+                <span id="ban6-turn-progress" class="turn-pill">BAN 1 / 6</span>
+              </div>
+              <div class="role-status-hint">
+                Click an agent from the roster below to ban them from this map.
+              </div>
+            </div>
+          </div>
+
+          <!-- VCT Professional Controller Box (Displayed if mode is VCT Professional) -->
+          <div id="vct-pro-agent-controls" class="card agent-control-panel hidden">
+            <div class="control-panel-header">
+              <div class="active-team-indicator">
+                <span class="turn-label">CURRENT TURN:</span>
+                <span id="vct-turn-team" class="turn-team-name">TEAM A</span>
+                <span id="vct-turn-progress" class="turn-pill">PICK 1 OF 1</span>
+              </div>
+              <div class="role-status-hint">
+                Click an available agent from the roster below to pick for your team. Unique globally.
+              </div>
+            </div>
+          </div>
+
+          <!-- Container chứa Roster và 2 Team Board (Hỗ trợ 3-column MOBA Draft & Classic) -->
+          <div id="agent-draft-container" class="agent-draft-container">
+            <!-- Teams Roster Boards (Team A & Team B) -->
+            <div class="agent-draft-boards">
+              <!-- Team A Roster -->
+              <div class="card team-agent-board team-a-board">
+                <div class="board-header">
+                  <span class="team-badge-a">TEAM A</span>
+                  <h4 id="board-team-a-name" class="board-team-title">Team A</h4>
+                </div>
+                <div id="board-team-a-list" class="board-agent-list">
+                  <!-- 5 slots or banned list -->
+                </div>
+              </div>
+
+              <!-- Center Banned Box (If Ban 6 Agents mode) -->
+              <div id="center-banned-board" class="card team-agent-board banned-board hidden">
+                <div class="board-header">
+                  <span class="banned-badge">BANNED</span>
+                  <h4 id="board-banned-title" class="board-team-title">BANNED AGENTS (0/6)</h4>
+                </div>
+                <div id="banned-agent-list" class="board-agent-list"></div>
+              </div>
+
+              <!-- Team B Roster -->
+              <div class="card team-agent-board team-b-board">
+                <div class="board-header">
+                  <span class="team-badge-b">TEAM B</span>
+                  <h4 id="board-team-b-name" class="board-team-title">Team B</h4>
+                </div>
+                <div id="board-team-b-list" class="board-agent-list">
+                  <!-- 5 slots -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Master Agent Grid (Roster) -->
+            <div class="card agent-roster-card">
+              <div class="card-header-flex">
+                <h3 class="card-title"><span class="accent-mark">/</span> AGENT ROSTER</h3>
+                <div class="agent-filters">
+                  <button type="button" class="agent-filter-btn active" data-filter="ALL">ALL</button>
+                  <button type="button" class="agent-filter-btn" data-filter="Duelist">DUELISTS</button>
+                  <button type="button" class="agent-filter-btn" data-filter="Controller">CONTROLLERS</button>
+                  <button type="button" class="agent-filter-btn" data-filter="Sentinel">SENTINELS</button>
+                  <button type="button" class="agent-filter-btn" data-filter="Initiator">INITIATORS</button>
+                </div>
+              </div>
+              <div id="master-agent-grid" class="agent-roster-grid">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= PHASE 5: OUTPUT & COPY ================= -->
+      <section id="phase-5" class="phase-section">
+        <div class="section-heading">
+          <span class="section-tag">// PHASE 05</span>
+          <h2 class="section-title">MATCH SUMMARY &amp; EXPORT</h2>
+          <p class="section-desc">The tournament draft has concluded. Review the results and copy the formatted summary directly to Discord.</p>
+        </div>
+
+        <div class="summary-layout">
+          <!-- Visual Match Summary Card -->
+          <div class="card summary-card">
+            <div class="summary-card-header">
+              <div class="match-title-row">
+                <span id="summary-team-a-tag" class="team-badge-a">TEAM A</span>
+                <span id="summary-team-a-name" class="summary-team-name">Team A</span>
+                <span class="summary-vs">VS</span>
+                <span id="summary-team-b-name" class="summary-team-name">Team B</span>
+                <span id="summary-team-b-tag" class="team-badge-b">TEAM B</span>
+              </div>
+              <div class="summary-meta-row">
+                <span id="summary-format-badge" class="meta-tag">BO3</span>
+                <span id="summary-mode-badge" class="meta-tag">RANDOM AGENT</span>
+              </div>
+            </div>
+
+            <!-- Drafted Maps List -->
+            <div class="summary-section">
+              <h4 class="summary-subtitle">// MAPS SCHEDULE</h4>
+              <div id="summary-maps-list" class="summary-maps-grid">
+                <!-- Populated via JS -->
+              </div>
+            </div>
+
+            <!-- Agents Summary -->
+            <div class="summary-section" id="summary-agents-section">
+              <!-- Populated via JS depending on mode -->
+            </div>
+          </div>
+
+          <!-- Discord Markdown Preview & Copy Card -->
+          <div class="card discord-card">
+            <div class="discord-card-header">
+              <div class="discord-logo-title">
+                <svg width="22" height="22" viewBox="0 0 127.14 96.36" fill="#5865F2" aria-hidden="true">
+                  <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,45.91,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,45.91,96.12,53,91.08,65.69,84.69,65.69Z"/>
+                </svg>
+                <h3 class="card-title">DISCORD EXPORT</h3>
+              </div>
+              <span class="discord-tag">DIFF &amp; YAML HIGHLIGHTED</span>
+            </div>
+
+            <p class="discord-help-text">Click below to copy Discord markdown with syntax highlighting.</p>
+            
+            <pre class="discord-preview-box"><code id="discord-raw-output">Generating preview...</code></pre>
+
+            <div class="discord-actions-bar">
+              <button type="button" id="btn-copy-discord" class="btn-primary btn-lg copy-btn">
+                <span class="btn-copy-icon">📋</span> COPY TO DISCORD
+              </button>
+              <button type="button" id="btn-new-match" class="btn-ghost btn-lg">
+                🔄 START NEW MATCH
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ================= MODALS ================= -->
+
+  <!-- Modal: Team Priority Choice (Winner of Wheel 1) -->
+  <div id="modal-team-choice" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span class="modal-tag">// SEEDING OUTCOME</span>
+        <h3 class="modal-title" id="modal-winner-title">TEAM 1 WON THE ROLL!</h3>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">
+          As the winning team, choose your designation for the remainder of this match.
+        </p>
+        <div class="choice-cards-grid">
+          <button type="button" id="btn-choose-team-a" class="choice-card choice-team-a">
+            <span class="choice-badge">TEAM A</span>
+            <span class="choice-title">PLAY AS TEAM A</span>
+            <span class="choice-desc">Bans first &amp; picks first in map draft.</span>
+          </button>
+          <button type="button" id="btn-choose-team-b" class="choice-card choice-team-b">
+            <span class="choice-badge">TEAM B</span>
+            <span class="choice-title">PLAY AS TEAM B</span>
+            <span class="choice-desc">Receives starting side selection first.</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Side Choice (Attack vs Defense) -->
+  <div id="modal-side-choice" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span class="modal-tag">// SIDE SELECTION</span>
+        <h3 class="modal-title" id="side-choice-team-prompt">TEAM B: SELECT STARTING SIDE</h3>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc" id="side-choice-map-prompt">
+          Select starting side for Map: Ascent
+        </p>
+        <div class="side-buttons-grid">
+          <button type="button" id="btn-choose-attack" class="btn-side btn-side-atk">
+            <div class="side-icon">&#9876;</div>
+            <div class="side-name">ATTACK</div>
+            <div class="side-desc">Start match on Offense</div>
+          </button>
+          <button type="button" id="btn-choose-defense" class="btn-side btn-side-def">
+            <div class="side-icon">&#128737;</div>
+            <div class="side-name">DEFENSE</div>
+            <div class="side-desc">Start match on Defense</div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: BO5 Map 5 Horizontal Spin Wheel -->
+  <div id="modal-bo5-wheel" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal-card bo5-wheel-modal">
+      <div class="modal-header">
+        <span class="modal-tag">// BO5 MAP 5 DECIDER SIDE ROLL</span>
+        <h3 class="modal-title">DECIDER SIDE PROTOCOL</h3>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">
+          Automated 5-second roll determining starting side for Map 5. Team A will receive the rolled side; Team B receives the opposite.
+        </p>
+        
+        <!-- Horizontal Roulette Strip -->
+        <div class="horizontal-roulette-container">
+          <div class="roulette-center-marker"></div>
+          <div id="roulette-strip" class="roulette-strip">
+            <!-- Tiles rendered dynamically via JS -->
+          </div>
+        </div>
+
+        <div id="bo5-wheel-result-banner" class="bo5-result-banner hidden">
+          <span id="bo5-result-text">TEAM A GETS ATTACK — TEAM B GETS DEFENSE</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Mini-Roulette for Per-Map Agent Mode Roll -->
+  <div id="modal-map-agent-wheel" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal-card mini-roulette-modal">
+      <div class="modal-header">
+        <span class="modal-tag" id="mini-roulette-map-tag">// PER-MAP AGENT PROTOCOL</span>
+        <h3 class="modal-title" id="mini-roulette-map-title">ASCENT: AGENT MODE ROLL</h3>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc" id="mini-roulette-status">
+          Rolling to determine the agent rule for this specific map...
+        </p>
+        
+        <div class="horizontal-roulette-container mini-roulette-container" id="wrapper-mini-roulette">
+          <div class="roulette-center-marker"></div>
+          <div id="mini-reel-strip" class="roulette-strip">
+            <!-- Alternating Random Agent / Ban 6 Agents cards rendered dynamically (No percentages) -->
+          </div>
+        </div>
+
+        <div id="mini-roulette-result-banner" class="bo5-result-banner hidden">
+          <span id="mini-roulette-result-text">RANDOM AGENT SELECTED</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Reset Confirmation -->
+  <div id="modal-reset-confirm" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span class="modal-tag">// RESET MATCH</span>
+        <h3 class="modal-title">ABORT CURRENT MATCH?</h3>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">
+          All selections, wheel results, map draft, and agent picks will be permanently cleared.
+        </p>
+        <div class="modal-actions-flex">
+          <button type="button" id="btn-confirm-reset" class="btn-danger btn-md">YES, RESET MATCH</button>
+          <button type="button" id="btn-cancel-reset" class="btn-ghost btn-md">CANCEL</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <!-- Application Script -->
+  <script src="script.js"></script>
+</body>
+</html>
