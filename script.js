@@ -55,6 +55,7 @@
     { name: 'Astra', role: 'Controller', image: 'assets/agents/astra.png' },
     { name: 'Harbor', role: 'Controller', image: 'assets/agents/harbor.png' },
     { name: 'Clove', role: 'Controller', image: 'assets/agents/clove.png' },
+    { name: 'Miks', role: 'Controller', image: 'assets/agents/miks.png' },
 
     // Sentinels
     { name: 'Killjoy', role: 'Sentinel', image: 'assets/agents/killjoy.png' },
@@ -63,6 +64,7 @@
     { name: 'Chamber', role: 'Sentinel', image: 'assets/agents/chamber.png' },
     { name: 'Deadlock', role: 'Sentinel', image: 'assets/agents/deadlock.png' },
     { name: 'Vyse', role: 'Sentinel', image: 'assets/agents/vyse.png' },
+    { name: 'Veto', role: 'Sentinel', image: 'assets/agents/veto.png' },
 
     // Initiators
     { name: 'Sova', role: 'Initiator', image: 'assets/agents/sova.png' },
